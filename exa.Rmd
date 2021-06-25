@@ -1,30 +1,195 @@
 ---
-title: "Untitled"
+title: "ANALISIS FACTORIAL"
 output: github_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# IMPORTAR LA BASE DE DATOS EN FORMA EXCEL
+```{r}
+library(readxl)
+datos<- read_excel("C:/Users/57313/Downloads/tabla excel (1).xlsx")
+```
+# TIPIFICACION O ESTANDARIZACION DE LAS VARIABLES  
+la tipificacion permite que todas las variables metricas gocen de una misma unidad de medida estdistica
+```{r}
+datost<- datos #crear una nueva base de datos 
+datost<- scale(datost, center= T , scale= T)
+datost<- as.data.frame(datost)
+```
+#NORMALIDAD MULTIVARIANTE   
+HO:normalidad multivariante 
+H1:no normalidad multivariante 
+confianza=95%
+Alfa= 5%=0,05
+P value > alfa:no se rechaza a la HO (Normalidad)
+P Value < alfa:se rechaza a la HO (No normalidad)
+```{r}
+library(MVN)
+mvn(datost[2:7])
+```
+# MATRIZ DE CORRELACIONES
+HO: Correlacion entre las variables=0 (no hay correacion)
+H1: Correlacion diferente de 0 (si hay correlacion)
+cuando no se rechaza la HO, no se aplica AFE.
+Se rechace HO, si para aplicar AFE.
+```{r}
+library(psych)
+corr.test(datost[,2:7])
+correlaciones<- corr.test(datost[,2:7]) #se crea la matriz de correlaciones
+correlaciones$r #matriz de correlaciones
+r <-as.matrix(correlaciones$r)
+```
+P value > alfa: no se rechaza HO estamos en esta situacion ,por lo tanto no se aplica Analisis Factorial Exploratorio
+P value < alfa: se rechaza HO
+
+# INDICADORES DE APLICABILIDAD DEL AFE(BONDAD DEL AJUSTE)
+## CONTRASTE DE ESFERICIDAD DE BARTLETT
+HO: las correlaciones teoricas entre cada par de variables es nulo
+H1: Las correlaciones teoricas entre cada par de variables no es nula
+```{r}
+dim(datost) #tamaño de la muestra=30 personas 
+cortest.bartlett(r, n=30)
+```
+## MEDIDA DE ADECUACION MUESTRAL DE KAISER, MEYER Y OKLIN( KMO)
+Estudia variable por variables,si son o no aceptadas en el modelo para hacer AFE. (que variables elimino)
+Se mantiene una variable en el modelo,si el KNO es igual o mayor a 0,7.
+se elimina una variable del modelo,si el KNO es menor a 0,7.
+```{r}
+KMO(r)
+```
+KMO=0.61 mediocre
+NOTA1=0.53 miserable
+NOTA2=0.66 mediocre
+NOTA3=0.12 inaceptable
+HORAS=0.60 miserable
+NOTAS4=0.61 miserable
+REPROBADOS=0.70 regular
+# DETERMINACION DEL NUMERO DE FACTORES A EXTRAER 
+## metodos de las componentes principales iteradas (o Ejes principales)
+
+Este metodo de las ejes principales es de naturaliza no parametrica,es decir, que se ocupa,cuando no hay normalidad multivariante;pero,tambien es valido para modelos parametricos (normalidad multivariante)
+
+```{r}
+fa.parallel(r, fm="pa", n.obs=30, ylabel = "Eigenvalues") 
+```
+con el metodo de los ejes principales es 1 factor
+## Metodo de las componentes principales
+metodos parametrico,sirve solo para modelos con normalidad multivariante.
+
+```{r}
+fa.parallel(r, fm="pc", n.obs=30, ylabel = "Eigenvalues")
+```
+con el metodo de las componentes  principales 1 factor
+## Metodo de la maxima verosimilitud
+con el metodo parametrico,sirve solo para modelos con normalidad multivariante.
+```{r}
+fa.parallel(r, fm="ml", n.obs=30, ylabel = "Eigenvalues")
+```
+1 factor
+## Metodo paralelo con interaciones
+metodo parametrico,sirve solo para modelos con normalidad multivariante.
+
+```{r}
+library(paran)
+paran(r, iterations= 100,graph= F)
+```
+# METODOS DE EXTRACCION DE FACTORES
+## METODO DE ANALISIS DE LOS COMPONENTES PRINCIPALES(ACP)
+```{r}
+acp<- principal(r, nfactors=1, rotate= "none")
+acp
+```
+PC1: cargas factoriales de cada variable.
+h2: Comunalidad(varianza comun explicado).
+notas1 es explicado en un 23% por el factor extraido,notas 2 es explicada en un 59% por el factor extraido,notas3 por un 0,0%,horas por un 40%,notas 4 por un 80% y reprobados por un 69%
+  
+  mientras mas alta sea h2 es mejor el modelo. 0;1
+
+u2: Especificacidad (varianza residuall o varianza no explicada) nota 1 no es explicada en un 76%,notas 2en 40%,notas 3en 99%,horas en 59%,nota 4 en 19% y mreprrobadosen 30%
+  
+Mientras mas pequeños sea u2 es mejor el modelo. 0;1
+
+h2+u2=1
+Comunidad+Especificada=1
+varianza explicada+varianza no explicada=1
+
+SS loadings= 2.73(es la varianza explicada en valores absolutos o la suma de los h2 )
+
+proportion var=0.46 ( El % que la varianza explicada representa del total)
+
+Lo ideal es que proportion var sea lo mas cercano a 1.
+
+RMSR= 0,14 (Raiz cuadrada media de los residuos)
+teoricamente un modelo presenta una solcuion adecuada cuando el RSMR PC1: cargas
+
+## METODOS DE LOS EJES PRINCIPALES O COMPONENTES PRINCIPALES ITERADAS (CPI)
+
+```{r}
+cpi<-fa(r, nfactors = 1, fm= "pa", rotate =  "none", n.obs= 30)
+cpi
 ```
 
-## GitHub Documents
-
-This is an R Markdown format used for publishing markdown documents to GitHub. When you click the **Knit** button all R code chunks are run and a markdown file (.md) suitable for publishing to GitHub is generated.
-
-## Including Code
-
-You can include R code in the document as follows:
-
-```{r cars}
-summary(cars)
+## METODO DE MAXIMA VEROSIMILITUD
+```{r}
+mve<- fa(r,nfactors=1, fm= "ml", rotate= "none", n.obs= 30)
+mve
 ```
 
-## Including Plots
+## PRESENTACION GRAFICA DE LOS FACTORES EXTRAIDOS 
+## metodo de analisis de los componentes principales (ACP)
+##Solo se grafica cuando hay 2 factores a extraer,con 1 factor no hay grafica
+```{r}
+acp1<- principal(datost[,2:7], nfactors = 1, rotate = "none", scores = T)
+acp1$scores
+puntacionesfactoriales_acp<- acp1$scores
+puntacionesfactoriales_acp<- as.data.frame(puntacionesfactoriales_acp)
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## METODO DE LAS COMPONENTES PRINCIPALES ITERADAS (CPI)
+
+```{r}
+cpi1<- fa(datost[,2:7], nfactors = 1, fm= "pa", rotate = "none", n.obs = 30,scores = "regression")
+cpi1$scores
+puntfact_cpi<- cpi1$scores
+puntfact_cpi<- as.data.frame(puntfact_cpi)
+
+
+```
+
+
+## METODOS DE LA MAXIMA VEROSIMILITUD
+
+```{r}
+mvel<- fa(datost[,2:7], nfactors = 1, fm= "ml", rotate = "none", n.obs = 30,scores = "regression")
+mvel$scores
+puntfact_mve<- mvel$scores
+puntfact_mve<- as.data.frame(puntfact_mve)
+
+```
+
+# OBTENCION DE LOS FACTORES EXTRAIDOS 
+se  trabaja con el metodo que el investigador decidio (ACP,CPI,MVE)
+
+```{r}
+factor.scores(r, mve,method = "Trurstone")
+```
+## AGREGAR FACTOR EXTRAIDO ( PUNTACIONES FACTORIALES) EN EL DATA FRAME ORIGINAL
+
+```{r}
+datos_puntaciones<- c(datos, puntacionesfactoriales_acp)
+datos_puntaciones<- as.data.frame(datos_puntaciones)
+```
+# GUARDAR EL DATA FRAME "DATOS_PUNTACIONES"
+```{r}
+setwd("C:/Users/57313/Downloads") #Donde guardar tu archivo excel csv
+write.table(datos_puntaciones, file = "encuesta.csv", sep = ";", row.names = F, dec =";")
+```
+
+
+
+
+
+
+
+
+
